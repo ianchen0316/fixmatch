@@ -32,12 +32,12 @@ def get_raw_dataset(dataset, root, n_labeled):
         test_base = datasets.CIFAR10(root, train=False, download=True)
     
     # Split original training dataset into labeled/unlabeled/validation indices
-    labeled_ind, unlabeled_ind, val_ind = semi_split(train_base.targets, int(n_labeled/10))
+    labeled_ind, unlabeled_ind = semi_split(train_base.targets, int(n_labeled/10))
     
     # Create labeled/unlabeled/val/test dataset (before transformation)
     labeled_dataset = (train_base.data[labeled_ind], np.array(train_base.targets)[labeled_ind])
     unlabeled_dataset = train_base.data[unlabeled_ind]
-    val_dataset = (train_base.data[val_ind], np.array(train_base.targets)[val_ind])
+    # val_dataset = (train_base.data[val_ind], np.array(train_base.targets)[val_ind])
     test_dataset = (test_base.data, np.array(test_base.targets))
       
     #labeled_dataset = Cifar10Labeled(root, labeled_ind, train=True, transform_weak=transform_weak)
@@ -47,7 +47,7 @@ def get_raw_dataset(dataset, root, n_labeled):
     
     #print("#Labeled: {}, #Unlabeled: {}, #Val: {}, #Test: {}".format(len(labeled_dataset), len(unlabeled_dataset), len(val_dataset), len(test_dataset)))
     
-    return labeled_dataset, unlabeled_dataset, val_dataset, test_dataset
+    return labeled_dataset, unlabeled_dataset, test_dataset
     
     
 def semi_split(labels, label_per_class):
@@ -71,33 +71,33 @@ def semi_split(labels, label_per_class):
     labels = np.array(labels)
     labeled_ind = []
     unlabeled_ind = []
-    val_ind = []
+    # val_ind = []
     
     # Iterate through each class
     for i in range(10):
         class_ind = np.where(labels == i)[0]
         np.random.shuffle(class_ind)
         labeled_ind.extend(class_ind[:label_per_class])
-        unlabeled_ind.extend(class_ind[label_per_class:-500])
-        val_ind.extend(class_ind[-500:])
+        unlabeled_ind.extend(class_ind[label_per_class:])
+        # val_ind.extend(class_ind[-500:])
     
     np.random.shuffle(labeled_ind)
     np.random.shuffle(unlabeled_ind)
-    np.random.shuffle(val_ind)
+    # np.random.shuffle(val_ind)
     
-    return labeled_ind, unlabeled_ind,  val_ind
+    return labeled_ind, unlabeled_ind
     
 
-def get_transformed_dataset(labeled_dataset, unlabeled_dataset, val_dataset, test_dataset, weak_transform, strong_transform, eval_transform):
+def get_transformed_dataset(labeled_dataset, unlabeled_dataset, test_dataset, weak_transform, strong_transform, eval_transform):
     
     """ Turn raw data into Dataset object with transformations applied.  """
     
     labeled = LabelTransformed(labeled_dataset, weak_transform)
     unlabeled = UnlabelTransformed(unlabeled_dataset, weak_transform, strong_transform)
-    valid = ValTransformed(val_dataset, eval_transform)
+    # valid = ValTransformed(val_dataset, eval_transform)
     test = TestTransformed(test_dataset, eval_transform)
     
-    return labeled, unlabeled, valid, test 
+    return labeled, unlabeled, test 
     
     
 class LabelTransformed(Dataset):
