@@ -9,21 +9,21 @@ from torchvision import datasets, transforms
 
 class FixmatchLoss:
     
-    def __call__(self, logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask):
+    def __call__(self, logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device):
         
         lambda_u = 5
         
         # Calculate the loss of labeled batch data 
-        l_loss_func = nn.CrossEntropyLoss()
-        loss_x = l_loss_func(logits_x, Y_target)
+        l_loss_func = nn.CrossEntropyLoss().to(device)
+        loss_x = l_loss_func(logits_x, Y_target).to(device)
         
         # Calculate the loss of unlabeled batch data
-        u_loss_func = nn.CrossEntropyLoss(reduction='none')
-        loss_u  = (u_loss_func(logits_u_strong, guess_labels)*mask).mean()
+        u_loss_func = nn.CrossEntropyLoss(reduction='none').to(device)
+        loss_u  = (u_loss_func(logits_u_strong, guess_labels)*mask).mean().to(device)
         
         loss = loss_x + lambda_u*loss_u
         
-        return loss   
+        return loss 
     
     
 def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, optimizer, device, n_iters, threshold):
