@@ -69,7 +69,7 @@ def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, optim
              
         # ============================
         
-        loss = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask)
+        loss = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device)
         
         # ============================
         optimizer.zero_grad()
