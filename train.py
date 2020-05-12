@@ -26,7 +26,7 @@ class FixmatchLoss:
         return loss 
     
     
-def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, optimizer, device, n_iters, threshold):
+def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, n_iters, threshold, optimizer, device):
     
     #TODO: Think about "interleave" and "de-interleave" in training process. Whether they are necessary ...
 
@@ -45,19 +45,22 @@ def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, optim
         try:
             U_weak, U_strong = next(u_iterator)
         except:
-            u_iterator = iter(unlabeled)
+            u_iterator = iter(unlabeled_iterator)
+            U_weak, U_strong = next(u_iterator)
+
+        Y_target = Y_target.to(device)
         
         # ==========================
         
-        batch_size = X_weak.size(0)
-        mu = U_weak.size(0) // batch_size
-        
+        l_batch_size = X_weak.size(0)
+        u_batch_size = U_weak.size(0)
+
         total_imgs = torch.cat([X_weak, U_weak, U_strong], dim=0).to(device)
         logits = model(total_imgs)
         
         # ==========================
-        logits_x = logits[:batch_size]
-        logits_u_weak, logits_u_strong = logits[batch_size:batch_size+batch_size*mu], logits[batch_size+batch_size*mu:]
+        logits_x = logits[:l_batch_size]
+        logits_u_weak, logits_u_strong = logits[l_batch_size:l_batch_size+u_batch_size], logits[l_batch_size+u_batch_size:]
         
         # =========================
         
@@ -68,10 +71,11 @@ def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, optim
             mask = max_p.ge(threshold).float()
              
         # ============================
-        
         loss = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device)
         
         # ============================
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+    
+    return model
