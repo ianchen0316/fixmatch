@@ -8,7 +8,7 @@ from torchvision import datasets, transforms
 
 from datagen import get_raw_dataset, get_transformed_dataset
 from randaugment import RandAugmentMC
-from model import VGG
+from model import VGG, WideResnet
 from train import FixmatchLoss, fixmatch_train
 from utils import evaluate, calculate_accuracy
 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     print(device)
 
     # ================= Modeling =====================================
-    model = VGG('vgg-11', 10)
+    model = WideResnet(n_classes=10)
     model.to(device)
     
     # ================= Training =====================================
