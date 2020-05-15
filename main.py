@@ -65,7 +65,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters())
     
     EPOCHS = 100
-    n_iter = 10
+    n_iter = 350
     threshold = 0.85
 
     #semi_train_history = {'loss': [], 'acc': []}
