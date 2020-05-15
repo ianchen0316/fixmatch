@@ -28,8 +28,8 @@ def get_raw_dataset(dataset, root, n_labeled):
     """
     
     if dataset == 'cifar-10':
-        train_base = datasets.CIFAR10(root, train=True, download=False)
-        test_base = datasets.CIFAR10(root, train=False, download=False)
+        train_base = datasets.CIFAR10(root, train=True, download=True)
+        test_base = datasets.CIFAR10(root, train=False, download=True)
     
     # Split original training dataset into labeled/unlabeled/validation indices
     labeled_ind, unlabeled_ind, val_ind = semi_split(train_base.targets, int(n_labeled/10))
