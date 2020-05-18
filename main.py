@@ -24,7 +24,6 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='cifar-10', help='dataset for training/evaluating')
     parser.add_argument('--path', type=str, default='./', help='path of the dataset')
     parser.add_argument('--n_labeled', type=int, default=400, help='number of labeled data per class in training')
-    parser.add_argument('--mu', type=int, default=7, help='ratio of # unlabeled data to # labeled data in training')
     
     parser.add_argument('--n_classes', type=int, default=10, help='number of classes')
     parser.add_argument('--model_name', type=str, default='WideResnet', help='backbone model for classification')
@@ -32,6 +31,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--epochs', type=int, default=500, help='number of training epochs')
     parser.add_argument('--batch_size', type=int, default=64, help='training batch of labeled data')
+    parser.add_argument('--mu', type=int, default=7, help='ratio of # unlabeled data to # labeled data in training')
     parser.add_argument('--threshold', type=int, default=0.95, help='probability threshold for pseudo label')
     parser.add_argument('--l_u', type=float, default=1.0, help='weight of unlabeled loss')
     parser.add_argument('--lr', type=float, default=0.03, help='initial learning rate')
@@ -78,17 +78,12 @@ if __name__ == '__main__':
             transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2471, 0.2435, 0.2616))   
         ])
     
-    #TODO: consider ratio of labeled/unlabeled? 
-    labeled_dataset, unlabeled_dataset, val_dataset, test_dataset = get_raw_dataset(args.dataset, args.path, 
-                                                                                args.n_labeled)
+    labeled_dataset, unlabeled_dataset, val_dataset, test_dataset = get_raw_dataset(args.dataset, args.path, args.n_labeled)
     
     labeled, unlabeled, valid, test = get_transformed_dataset(labeled_dataset, unlabeled_dataset, val_dataset, test_dataset, weak_transform, strong_transform, eval_transform)
     
-    labeled_iterator = DataLoader(labeled, batch_size=32, shuffle=True)
-    unlabeled_iterator = DataLoader(unlabeled, batch_size=128, shuffle=True)
-    val_iterator = DataLoader(valid, batch_size=32, shuffle=False)
-    test_iterator = DataLoader(test, batch_size=32, shuffle=False)
-
+    labeled_iterator, unlabeled_iterator, val_iterator, test_iterator = get_dataloader(labeled, unlabeled, valid, test, args.batch_size, args.mu)
+    
     # ================== Device =====================================
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)

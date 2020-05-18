@@ -14,7 +14,7 @@ def get_raw_dataset(dataset, root, n_labeled):
     A flexible wrapper for generating labeled/unlabeled/validation/testing datasets
     
     Args:
-        - root: root path of cifar10 directory
+        - root: root path of dataset
         - n_label: number of total labeled data
         - train_transform: transformation pipeline of training data
         - eval_transform: evaluation pipeline of evaluation data
@@ -39,13 +39,6 @@ def get_raw_dataset(dataset, root, n_labeled):
     unlabeled_dataset = train_base.data[unlabeled_ind]
     val_dataset = (train_base.data[val_ind], np.array(train_base.targets)[val_ind])
     test_dataset = (test_base.data, np.array(test_base.targets))
-      
-    #labeled_dataset = Cifar10Labeled(root, labeled_ind, train=True, transform_weak=transform_weak)
-    #unlabeled_dataset = Cifar10Unlabeled(root, unlabeled_ind, num_transform=1, train=True, transform_weak=transform_weak, transform_strong=transform_strong)
-    #val_dataset = Cifar10Labeled(root, val_ind, transform=eval_transform)
-    #test_dataset = Cifar10Labeled(root, train=False, transform=eval_transform)
-    
-    #print("#Labeled: {}, #Unlabeled: {}, #Val: {}, #Test: {}".format(len(labeled_dataset), len(unlabeled_dataset), len(val_dataset), len(test_dataset)))
     
     return labeled_dataset, unlabeled_dataset, val_dataset, test_dataset
     
@@ -98,6 +91,18 @@ def get_transformed_dataset(labeled_dataset, unlabeled_dataset, val_dataset, tes
     test = TestTransformed(test_dataset, eval_transform)
     
     return labeled, unlabeled, valid, test 
+
+
+def get_dataloader(labeled, unlabeled, valid, test, batch_size, mu):
+
+    
+    labeled_iterator = DataLoader(labeled, batch_size=batch_size, shuffle=True)
+    unlabeled_iterator = DataLoader(unlabeled, batch_size=mu*batch_size, shuffle=True)
+    val_iterator = DataLoader(valid, batch_size=args.batch_size, shuffle=False)
+    test_iterator = DataLoader(test, batch_size=args.batch_size, shuffle=False)
+    
+    return labeled_iterator, unlabeled_iterator, val_iterator, test_iterator
+
     
     
 class LabelTransformed(Dataset):

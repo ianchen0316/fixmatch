@@ -14,10 +14,10 @@ class ModelSetup:
     
     """ Interface for connecting model setups and main codes """
     
-    def __init__(self, args):
+    def __init__(self, n_classes, model_name):
         
-        self.n_classes = args.n_classes
-        self.model_name = args.model_name
+        self.n_classes = n_classes
+        self.model_name = model_name
     
     def get_model(self):
         
