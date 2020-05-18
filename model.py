@@ -9,6 +9,26 @@ vgg_config = {
 }
 
 
+
+class ModelSetup:
+    
+    """ Interface for connecting model setups and main codes """
+    
+    def __init__(self, args):
+        
+        self.n_classes = args.n_classes
+        self.model_name = args.model_name
+    
+    def get_model(self):
+        
+        if self.model_name == 'VGG':
+            return VGG(vgg_config, self.n_classes)
+        elif self.model_name == 'WideResnet':
+            return WideResnet(self.n_classes)
+        else:
+            raise NotImplementedError("This model is not implemented.")
+        
+        
 class VGG(nn.Module):
     
     def __init__(self, spec, output_dim):
