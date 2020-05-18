@@ -36,6 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--l_u', type=float, default=1.0, help='weight of unlabeled loss')
     parser.add_argument('--lr', type=float, default=0.03, help='initial learning rate')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum for optimizer')
+    parser.add_argument('--weight_decay', type=float, default=0.0005, help='coefficient of L2 regularization loss term')
     parser.add_argument('--seed', type=int, default=42, help='seed for randomization. -1 if no seed')
     
     args = parser.parse_args()
@@ -46,8 +47,6 @@ if __name__ == '__main__':
         torch.manual_seed(args.seed)
         random.seed(args.seed)
         np.random.seed(args.seed)
-    
-    #TODO: set number of iterations
     
     # ============ Dataset Setup ============================
 
@@ -84,6 +83,9 @@ if __name__ == '__main__':
     
     labeled_iterator, unlabeled_iterator, val_iterator, test_iterator = get_dataloader(labeled, unlabeled, valid, test, args.batch_size, args.mu)
     
+    num_iters = max(len(labeled)//args.batch_size, len(unlabeled)//(args.mu*args.batch_size))
+    print(num_iters)
+    
     # ================== Device =====================================
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
@@ -93,20 +95,20 @@ if __name__ == '__main__':
     model = model_setup.get_model()
     model.to(device)
     
-    # ================= Training =====================================
-    loss_func = FixmatchLoss()
-    optimizer = torch.optim.Adam(model.parameters())
+    # ================= Loss function / Optimizer =====================================
+    loss_func = FixmatchLoss(args.l_u)
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum, nesterov=True)
     
-    EPOCHS = 100
-    n_iter = 350
-    threshold = 0.85
+    #TODO: add learning rate scheduler
+    
+    # ================= Training Stage =================================================
+  
+    #train_history = {'loss': [], 'acc': []}
+    #test_history = {'loss': [], 'acc': []}
 
-    #semi_train_history = {'loss': [], 'acc': []}
-    #semi_test_history = {'loss': [], 'acc': []}
+    for epoch in range(args.epochs):
 
-    for epoch in range(EPOCHS):
-
-        model = fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, n_iter, threshold, optimizer, device)
+        model = fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, num_iters, args.threshold, optimizer, device)
 
         #train_acc = evaluate(model, labeled_iterator, device)
         test_acc = evaluate(model, test_iterator, device)
