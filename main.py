@@ -22,6 +22,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Fixmatch Hyperparameters")
     
     parser.add_argument('--dataset', type=str, default='cifar-10', help='dataset for training/evaluating')
+    parser.add_argument('--path', type=str, default='./', help='path of the dataset')
     parser.add_argument('--n_labeled', type=int, default=400, help='number of labeled data per class in training')
     parser.add_argument('--mu', type=int, default=7, help='ratio of # unlabeled data to # labeled data in training')
     
@@ -48,6 +49,7 @@ if __name__ == '__main__':
     
     #TODO: set number of iterations
     
+    # ============ Dataset Setup ============================
 
     weak_transform = transforms.Compose([
             transforms.ToPILImage(),
@@ -76,8 +78,9 @@ if __name__ == '__main__':
             transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2471, 0.2435, 0.2616))   
         ])
     
-    labeled_dataset, unlabeled_dataset, val_dataset, test_dataset = get_raw_dataset('cifar-10', './', 
-                                                                                n_labeled=2000)
+    #TODO: consider ratio of labeled/unlabeled? 
+    labeled_dataset, unlabeled_dataset, val_dataset, test_dataset = get_raw_dataset(args.dataset, args.path, 
+                                                                                args.n_labeled)
     
     labeled, unlabeled, valid, test = get_transformed_dataset(labeled_dataset, unlabeled_dataset, val_dataset, test_dataset, weak_transform, strong_transform, eval_transform)
     
@@ -91,7 +94,7 @@ if __name__ == '__main__':
     print(device)
 
     # ================= Modeling =====================================
-    model_setup = ModelSetup(args)
+    model_setup = ModelSetup(args.n_classes, args.model_name)
     model = model_setup.get_model()
     model.to(device)
     
