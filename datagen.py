@@ -32,7 +32,7 @@ def get_raw_dataset(dataset, root, n_labeled):
         test_base = datasets.CIFAR10(root, train=False, download=True)
     
     # Split original training dataset into labeled/unlabeled/validation indices
-    labeled_ind, unlabeled_ind, val_ind = semi_split(train_base.targets, int(n_labeled/10))
+    labeled_ind, unlabeled_ind, val_ind = semi_split(train_base.targets, n_labeled, [0.2, 0.05, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
     
     # Create labeled/unlabeled/val/test dataset (before transformation)
     labeled_dataset = (train_base.data[labeled_ind], np.array(train_base.targets)[labeled_ind])
@@ -43,13 +43,10 @@ def get_raw_dataset(dataset, root, n_labeled):
     return labeled_dataset, unlabeled_dataset, val_dataset, test_dataset
     
     
-def semi_split(labels, label_per_class):
+def semi_split(labels, num_label, class_label_ratio):
     
     """ 
     Return the indices to split the dataset into labeled/unlabeled/validation set according to the distribution of class 
-    
-    #TODO: enable more flexible per-class customization
-    #TODO: modify the number of class from 10 to arbitrary
     
     Args:
         - labels: original labels of the dataset
@@ -67,11 +64,14 @@ def semi_split(labels, label_per_class):
     val_ind = []
     
     # Iterate through each class
-    for i in range(10):
+    num_classes = len(class_label_ratio)
+    
+    for i in range(num_classes):
         class_ind = np.where(labels == i)[0]
         np.random.shuffle(class_ind)
-        labeled_ind.extend(class_ind[:label_per_class])
-        unlabeled_ind.extend(class_ind[label_per_class:])
+        per_class_num = int(num_label*class_label_ratio[i]) 
+        labeled_ind.extend(class_ind[:per_class_num])
+        unlabeled_ind.extend(class_ind[per_class_num:])
         val_ind.extend(class_ind[-500:])
     
     np.random.shuffle(labeled_ind)
