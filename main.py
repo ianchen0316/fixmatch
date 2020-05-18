@@ -91,7 +91,8 @@ if __name__ == '__main__':
     print(device)
 
     # ================= Modeling =====================================
-    model = ModelSetup(args)
+    model_setup = ModelSetup(args)
+    model = model_setup.get_model()
     model.to(device)
     
     # ================= Training =====================================
