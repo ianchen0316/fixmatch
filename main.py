@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 
-from datagen import get_raw_dataset, get_transformed_dataset
+from datagen import get_raw_dataset, get_transformed_dataset, get_dataloader
 from randaugment import RandAugmentMC
 from model import ModelSetup
 from train import FixmatchLoss, fixmatch_train

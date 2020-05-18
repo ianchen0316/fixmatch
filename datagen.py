@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, transforms
 
 
@@ -98,8 +98,8 @@ def get_dataloader(labeled, unlabeled, valid, test, batch_size, mu):
     
     labeled_iterator = DataLoader(labeled, batch_size=batch_size, shuffle=True)
     unlabeled_iterator = DataLoader(unlabeled, batch_size=mu*batch_size, shuffle=True)
-    val_iterator = DataLoader(valid, batch_size=args.batch_size, shuffle=False)
-    test_iterator = DataLoader(test, batch_size=args.batch_size, shuffle=False)
+    val_iterator = DataLoader(valid, batch_size=batch_size, shuffle=False)
+    test_iterator = DataLoader(test, batch_size=batch_size, shuffle=False)
     
     return labeled_iterator, unlabeled_iterator, val_iterator, test_iterator
 
