@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
         print('Epoch {} | Test Acc: {}'.format(epoch,  test_acc))
     
-    torch.save(args.model_save_path)
+    torch.save(model, args.model_save_path)
     with open(args.history_save_path, 'wb') as f:
         pickle.dump(test_history, f)
     
