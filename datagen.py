@@ -32,13 +32,15 @@ def get_raw_dataset(dataset, root, n_labeled):
         test_base = datasets.CIFAR10(root, train=False, download=True)
     
     # Split original training dataset into labeled/unlabeled/validation indices
-    labeled_ind, unlabeled_ind, val_ind = semi_split(train_base.targets, n_labeled, [0.2, 0.05, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+    labeled_ind, unlabeled_ind, val_ind = semi_split(train_base.targets, n_labeled, [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
     
     # Create labeled/unlabeled/val/test dataset (before transformation)
     labeled_dataset = (train_base.data[labeled_ind], np.array(train_base.targets)[labeled_ind])
     unlabeled_dataset = train_base.data[unlabeled_ind]
     val_dataset = (train_base.data[val_ind], np.array(train_base.targets)[val_ind])
     test_dataset = (test_base.data, np.array(test_base.targets))
+    
+    print('# Labeled: {} | # Unlabeled: {}'.format(len(labeled_dataset[0]), len(unlabeled_dataset)))
     
     return labeled_dataset, unlabeled_dataset, val_dataset, test_dataset
     

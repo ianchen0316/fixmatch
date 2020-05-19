@@ -24,7 +24,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--dataset', type=str, default='cifar-10', help='dataset for training/evaluating')
     parser.add_argument('--path', type=str, default='./', help='path of the dataset')
-    parser.add_argument('--n_labeled', type=int, default=400, help='number of labeled data per class in training')
+    parser.add_argument('--n_labeled', type=int, default=4000, help='number of labeled data per class in training')
     
     parser.add_argument('--n_classes', type=int, default=10, help='number of classes')
     parser.add_argument('--model_name', type=str, default='WideResnet', help='backbone model for classification')
