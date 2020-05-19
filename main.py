@@ -1,5 +1,6 @@
 import argparse
 import random
+import pickle
 
 import numpy as np
 import torch 
@@ -38,6 +39,10 @@ if __name__ == '__main__':
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum for optimizer')
     parser.add_argument('--weight_decay', type=float, default=0.0005, help='coefficient of L2 regularization loss term')
     parser.add_argument('--seed', type=int, default=42, help='seed for randomization. -1 if no seed')
+    
+    parser.add_argument('--use_saved', type=bool, default=False, help='start training from saved model or not')
+    parser.add_argument('--model_save_path', type=str, default=None, help='saved path for the model')
+    parser.add_argument('--history_save_path', type=str, default=None, help='saved history path')
     
     args = parser.parse_args()
     
@@ -91,8 +96,16 @@ if __name__ == '__main__':
     print(device)
 
     # ================= Modeling =====================================
-    model_setup = ModelSetup(args.n_classes, args.model_name)
-    model = model_setup.get_model()
+    
+    if args.use_saved:
+        model = torch.load(args.model_save_path)
+        with open(args.history_save_path, 'rb') as f:
+            test_history = pickle.load(f)
+    else:
+        model_setup = ModelSetup(args.n_classes, args.model_name)
+        model = model_setup.get_model()
+        test_history = {'loss': [], 'acc': []}
+    
     model.to(device)
     
     # ================= Loss function / Optimizer =====================================
@@ -102,9 +115,6 @@ if __name__ == '__main__':
     #TODO: add learning rate scheduler
     
     # ================= Training Stage =================================================
-  
-    #train_history = {'loss': [], 'acc': []}
-    #test_history = {'loss': [], 'acc': []}
 
     for epoch in range(args.epochs):
 
@@ -113,10 +123,14 @@ if __name__ == '__main__':
         #train_acc = evaluate(model, labeled_iterator, device)
         test_acc = evaluate(model, test_iterator, device)
 
-        #semi_train_history['acc'].append(train_acc)
-        #semi_test_history['acc'].append(test_acc)
+        #train_history['acc'].append(train_acc)
+        test_history['acc'].append(test_acc)
 
         print('Epoch {} | Test Acc: {}'.format(epoch,  test_acc))
+    
+    torch.save(args.model_save_path)
+    with open(args.history_save_path, 'wb') as f:
+        pickle.dump(test_history, f)
     
     
     
