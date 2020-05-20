@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from datagen import get_raw_dataset, get_transformed_dataset, get_dataloader
 from randaugment import RandAugmentMC
@@ -111,7 +112,7 @@ if __name__ == '__main__':
     # ================= Loss function / Optimizer =====================================
     loss_func = FixmatchLoss(args.l_u)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum, nesterov=True)
-    lr_scheduler = CosineAnnealingLR(optimizer, 4)
+    lr_scheduler = CosineAnnealingLR(optimizer, args.epochs*num_iters)
     
     #TODO: add learning rate scheduler
     
