@@ -4,18 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
-from torch.optim.lr_scheduler import LambdaLR
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from torchvision import datasets, transforms
-
-
-def cosine_lr_scheduler(optimizer, epoch, num_iters_per_epoch, current_iter, total_step):
-    
-    def _ratio(epoch, num_iters_per_epoch, current_iter, total_step):
-        
-        current_step = epoch*num_iters_per_epoch + current_iter
-        return math.cos((math.pi*7*current_step)/(16*total_step))
-
-    return LambdaLR(optimizer=optimizer, lr_lambda=cosine_lr_scheduler)
 
 
 class FixmatchLoss:
@@ -84,7 +74,7 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func
         loss = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device)
         
         # ============================
-        lr_scheduler = cosine_lr_scheduler(optimizer, epoch, 102, i, 20000)
+        lr_scheduler = CosineAnnealingLR(optimizer, 102*100)
         lr_scheduler.step()
         
         optimizer.zero_grad()
