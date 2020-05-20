@@ -1,10 +1,18 @@
+import math
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
-
+from torch.optim.lr_scheduler import LambdaLR
 from torchvision import datasets, transforms
+
+
+def cosine_lr_scheduler(epoch, num_iters_per_epoch, current_iter, total_step):
+    
+    current_step = epoch*num_iters + current_iter
+
+    return math.cos((math.pi*7*current_step)/(16*total_step))
 
 
 class FixmatchLoss:
@@ -27,7 +35,7 @@ class FixmatchLoss:
         return loss 
     
     
-def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, n_iters, threshold, optimizer, lr_scheduler, device):
+def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func, n_iters, threshold, optimizer, device):
     
     model.train()
 
@@ -73,9 +81,11 @@ def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, n_ite
         loss = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device)
         
         # ============================
+        lr_scheduler = LambdaLR(optimizer=optimizer, lr_lambda=cosine_lr_scheduler(epoch, 102, i, 20000))
+        lr_scheduler.step()
+        
         optimizer.zero_grad()
         loss.backward()
-        lr_scheduler.step()
         optimizer.step()
     
     def get_lr(optimizer):
