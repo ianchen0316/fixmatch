@@ -84,5 +84,7 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func
     def get_lr(optimizer):
         for param_group in optimizer.param_groups:
             print(param_group['lr'])
+            
+    get_lr(optimizer)
     
     return model
