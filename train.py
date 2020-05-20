@@ -28,7 +28,7 @@ class FixmatchLoss:
         return loss 
     
     
-def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func, n_iters, threshold, optimizer, device):
+def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func, n_iters, threshold, optimizer, lr_scheduler, device):
     
     model.train()
 
@@ -74,7 +74,6 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func
         loss = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device)
         
         # ============================
-        lr_scheduler = CosineAnnealingLR(optimizer, 102*100)
         lr_scheduler.step()
         
         optimizer.zero_grad()

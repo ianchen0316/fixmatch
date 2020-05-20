@@ -111,6 +111,7 @@ if __name__ == '__main__':
     # ================= Loss function / Optimizer =====================================
     loss_func = FixmatchLoss(args.l_u)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum, nesterov=True)
+    lr_scheduler = CosineAnnealingLR(optimizer, 4)
     
     #TODO: add learning rate scheduler
     
@@ -118,7 +119,7 @@ if __name__ == '__main__':
 
     for epoch in range(args.epochs):
 
-        model = fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func, num_iters, args.threshold, optimizer, device)
+        model = fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func, num_iters, args.threshold, optimizer, lr_scheduler, device)
 
         #train_acc = evaluate(model, labeled_iterator, device)
         test_acc = evaluate(model, test_iterator, device)
