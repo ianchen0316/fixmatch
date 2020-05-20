@@ -14,7 +14,7 @@ from datagen import get_raw_dataset, get_transformed_dataset, get_dataloader
 from randaugment import RandAugmentMC
 from model import ModelSetup
 from train import FixmatchLoss, fixmatch_train
-from utils import evaluate, calculate_accuracy
+from utils import get_cosine_schedule_with_warmup, evaluate, calculate_accuracy
 
 
 if __name__ == '__main__':
@@ -111,6 +111,8 @@ if __name__ == '__main__':
     # ================= Loss function / Optimizer =====================================
     loss_func = FixmatchLoss(args.l_u)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum, nesterov=True)
+    lr_scheduler = get_cosine_schedule_with_warmup(
+        optimizer, 0, 20000)
     
     #TODO: add learning rate scheduler
     
@@ -118,7 +120,7 @@ if __name__ == '__main__':
 
     for epoch in range(args.epochs):
 
-        model = fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, num_iters, args.threshold, optimizer, device)
+        model = fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, num_iters, args.threshold, optimizer, lr_scheduler, device)
 
         #train_acc = evaluate(model, labeled_iterator, device)
         test_acc = evaluate(model, test_iterator, device)

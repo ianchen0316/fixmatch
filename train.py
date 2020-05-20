@@ -27,7 +27,7 @@ class FixmatchLoss:
         return loss 
     
     
-def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, n_iters, threshold, optimizer, device):
+def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, n_iters, threshold, optimizer, lr_scheduler, device):
     
     model.train()
 
@@ -75,6 +75,11 @@ def fixmatch_train(model, labeled_iterator, unlabeled_iterator, loss_func, n_ite
         # ============================
         optimizer.zero_grad()
         loss.backward()
+        lr_scheduler.step()
         optimizer.step()
+    
+    def get_lr(optimizer):
+        for param_group in optimizer.param_groups:
+            print(param_group['lr'])
     
     return model
