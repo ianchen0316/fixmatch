@@ -31,7 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', type=str, default='WideResnet', help='backbone model for classification')
     
     
-    parser.add_argument('--epochs', type=int, default=500, help='number of training epochs')
+    parser.add_argument('--epochs', type=int, default=512, help='number of training epochs')
     parser.add_argument('--batch_size', type=int, default=64, help='training batch of labeled data')
     parser.add_argument('--mu', type=int, default=7, help='ratio of # unlabeled data to # labeled data in training')
     parser.add_argument('--threshold', type=int, default=0.95, help='probability threshold for pseudo label')
@@ -89,7 +89,8 @@ if __name__ == '__main__':
     
     labeled_iterator, unlabeled_iterator, val_iterator, test_iterator = get_dataloader(labeled, unlabeled, valid, test, args.batch_size, args.mu)
     
-    num_iters = max(len(labeled)//args.batch_size, len(unlabeled)//(args.mu*args.batch_size))
+    ## num_iters = max(len(labeled)//args.batch_size, len(unlabeled)//(args.mu*args.batch_size))
+    num_iters = 2048
     print(num_iters)
     
     # ================== Device =====================================
