@@ -5,6 +5,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
+from torch.optim.lr_scheduler import LambdaLR
+
+
+# from Fixmatch-pytorch
+def get_cosine_schedule_with_warmup(optimizer,
+                                    num_warmup_steps,
+                                    num_training_steps,
+                                    num_cycles=7./16.,
+                                    last_epoch=-1):
+    def _lr_lambda(current_step):
+        if current_step < num_warmup_steps:
+            return float(current_step) / float(max(1, num_warmup_steps))
+        no_progress = float(current_step - num_warmup_steps) / \
+            float(max(1, num_training_steps - num_warmup_steps))
+        return max(0., math.cos(math.pi * num_cycles * no_progress))
+
+    return LambdaLR(optimizer, _lr_lambda, last_epoch)
 
 
 class FixmatchLoss:
@@ -73,15 +90,14 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func
         loss = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device)
         
         # ============================
-        lr_scheduler.step()
-        
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    
+        lr_scheduler.step()
+            
     def get_lr(optimizer):
         for param_group in optimizer.param_groups:
-            print(param_group['lr'])
+            print('current learning rate:', param_group['lr'])
             
     get_lr(optimizer)
     

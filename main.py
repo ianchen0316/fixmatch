@@ -9,13 +9,14 @@ import torch.nn.functional as F
 
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
-from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from datagen import get_raw_dataset, get_transformed_dataset, get_dataloader
 from randaugment import RandAugmentMC
 from model import ModelSetup
-from train import FixmatchLoss, fixmatch_train
+from train import get_cosine_schedule_with_warmup, FixmatchLoss, fixmatch_train
 from utils import evaluate, calculate_accuracy
+
+torch.backends.cudnn.benchmark=True
 
 
 if __name__ == '__main__':
@@ -31,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', type=str, default='WideResnet', help='backbone model for classification')
     
     
-    parser.add_argument('--epochs', type=int, default=512, help='number of training epochs')
+    parser.add_argument('--epochs', type=int, default=1024, help='number of training epochs')
     parser.add_argument('--batch_size', type=int, default=64, help='training batch of labeled data')
     parser.add_argument('--mu', type=int, default=7, help='ratio of # unlabeled data to # labeled data in training')
     parser.add_argument('--threshold', type=int, default=0.95, help='probability threshold for pseudo label')
@@ -89,8 +90,7 @@ if __name__ == '__main__':
     
     labeled_iterator, unlabeled_iterator, val_iterator, test_iterator = get_dataloader(labeled, unlabeled, valid, test, args.batch_size, args.mu)
     
-    ## num_iters = max(len(labeled)//args.batch_size, len(unlabeled)//(args.mu*args.batch_size))
-    num_iters = 2048
+    num_iters = max(len(labeled)//args.batch_size, len(unlabeled)//(args.mu*args.batch_size))
     print(num_iters)
     
     # ================== Device =====================================
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     # ================= Loss function / Optimizer =====================================
     loss_func = FixmatchLoss(args.l_u)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum, nesterov=True)
-    lr_scheduler = CosineAnnealingLR(optimizer, args.epochs*num_iters)
+    lr_scheduler = get_cosine_schedule_with_warmup(optimizer, 0, args.epochs*num_iters)
     
     #TODO: add learning rate scheduler
     
@@ -131,9 +131,9 @@ if __name__ == '__main__':
 
         print('Epoch {} | Test Acc: {}'.format(epoch,  test_acc))
     
-    torch.save(model, args.model_save_path)
-    with open(args.history_save_path, 'wb') as f:
-        pickle.dump(test_history, f)
+        torch.save(model, args.model_save_path)
+        with open(args.history_save_path, 'wb') as f:
+            pickle.dump(test_history, f)
     
     
     
