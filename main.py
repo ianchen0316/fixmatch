@@ -26,7 +26,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--dataset', type=str, default='cifar-10', help='dataset for training/evaluating')
     parser.add_argument('--path', type=str, default='./', help='path of the dataset')
-    parser.add_argument('--n_labeled', type=int, default=4000, help='number of labeled data per class in training')
+    parser.add_argument('--n_labeled', type=int, default=4000, help='number of total labeled data in training')
     
     parser.add_argument('--n_classes', type=int, default=10, help='number of classes')
     parser.add_argument('--model_name', type=str, default='WideResnet', help='backbone model for classification')
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=1024, help='number of training epochs')
     parser.add_argument('--batch_size', type=int, default=64, help='training batch of labeled data')
     parser.add_argument('--mu', type=int, default=7, help='ratio of # unlabeled data to # labeled data in training')
-    parser.add_argument('--threshold', type=int, default=0.95, help='probability threshold for pseudo label')
+    parser.add_argument('--threshold', type=float, default=0.95, help='probability threshold for pseudo label')
     parser.add_argument('--l_u', type=float, default=1.0, help='weight of unlabeled loss')
     parser.add_argument('--lr', type=float, default=0.03, help='initial learning rate')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum for optimizer')
@@ -84,13 +84,14 @@ if __name__ == '__main__':
             transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2471, 0.2435, 0.2616))   
         ])
     
-    labeled_dataset, unlabeled_dataset, val_dataset, test_dataset = get_raw_dataset(args.dataset, args.path, args.n_labeled)
+    labeled_dataset, unlabeled_dataset, test_dataset = get_raw_dataset(args.dataset, args.path, args.n_labeled)
     
-    labeled, unlabeled, valid, test = get_transformed_dataset(labeled_dataset, unlabeled_dataset, val_dataset, test_dataset, weak_transform, strong_transform, eval_transform)
+    labeled, unlabeled, test = get_transformed_dataset(labeled_dataset, unlabeled_dataset, test_dataset, weak_transform, strong_transform, eval_transform)
     
-    labeled_iterator, unlabeled_iterator, val_iterator, test_iterator = get_dataloader(labeled, unlabeled, valid, test, args.batch_size, args.mu)
+    labeled_iterator, unlabeled_iterator, test_iterator = get_dataloader(labeled, unlabeled, test, args.batch_size, args.mu)
     
-    num_iters = max(len(labeled)//args.batch_size, len(unlabeled)//(args.mu*args.batch_size))
+    # num_iters = max(len(labeled)//args.batch_size, len(unlabeled)//(args.mu*args.batch_size))
+    num_iters = 1024
     print(num_iters)
     
     # ================== Device =====================================

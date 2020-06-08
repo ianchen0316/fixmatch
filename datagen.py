@@ -32,17 +32,16 @@ def get_raw_dataset(dataset, root, n_labeled):
         test_base = datasets.CIFAR10(root, train=False, download=True)
     
     # Split original training dataset into labeled/unlabeled/validation indices
-    labeled_ind, unlabeled_ind, val_ind = semi_split(train_base.targets, n_labeled, [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+    labeled_ind, unlabeled_ind = semi_split(train_base.targets, n_labeled, [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
     
     # Create labeled/unlabeled/val/test dataset (before transformation)
     labeled_dataset = (train_base.data[labeled_ind], np.array(train_base.targets)[labeled_ind])
     unlabeled_dataset = train_base.data[unlabeled_ind]
-    val_dataset = (train_base.data[val_ind], np.array(train_base.targets)[val_ind])
     test_dataset = (test_base.data, np.array(test_base.targets))
     
     print('# Labeled: {} | # Unlabeled: {}'.format(len(labeled_dataset[0]), len(unlabeled_dataset)))
     
-    return labeled_dataset, unlabeled_dataset, val_dataset, test_dataset
+    return labeled_dataset, unlabeled_dataset, test_dataset
     
     
 def semi_split(labels, num_label, class_label_ratio):
@@ -63,7 +62,6 @@ def semi_split(labels, num_label, class_label_ratio):
     labels = np.array(labels)
     labeled_ind = []
     unlabeled_ind = []
-    val_ind = []
     
     # Iterate through each class
     num_classes = len(class_label_ratio)
@@ -74,36 +72,32 @@ def semi_split(labels, num_label, class_label_ratio):
         per_class_num = int(num_label*class_label_ratio[i]) 
         labeled_ind.extend(class_ind[:per_class_num])
         unlabeled_ind.extend(class_ind[per_class_num:])
-        val_ind.extend(class_ind[-500:])
     
     np.random.shuffle(labeled_ind)
     np.random.shuffle(unlabeled_ind)
-    np.random.shuffle(val_ind)
     
-    return labeled_ind, unlabeled_ind, val_ind
+    return labeled_ind, unlabeled_ind
     
 
-def get_transformed_dataset(labeled_dataset, unlabeled_dataset, val_dataset, test_dataset, weak_transform, strong_transform, eval_transform):
+def get_transformed_dataset(labeled_dataset, unlabeled_dataset, test_dataset, weak_transform, strong_transform, eval_transform):
     
     """ Turn raw data into Dataset object with transformations applied.  """
     
     labeled = LabelTransformed(labeled_dataset, weak_transform)
     unlabeled = UnlabelTransformed(unlabeled_dataset, weak_transform, strong_transform)
-    valid = ValTransformed(val_dataset, eval_transform)
     test = TestTransformed(test_dataset, eval_transform)
     
-    return labeled, unlabeled, valid, test 
+    return labeled, unlabeled, test 
 
 
-def get_dataloader(labeled, unlabeled, valid, test, batch_size, mu):
+def get_dataloader(labeled, unlabeled, test, batch_size, mu):
 
     
     labeled_iterator = DataLoader(labeled, batch_size=batch_size, shuffle=True)
     unlabeled_iterator = DataLoader(unlabeled, batch_size=mu*batch_size, shuffle=True)
-    val_iterator = DataLoader(valid, batch_size=batch_size, shuffle=False)
     test_iterator = DataLoader(test, batch_size=batch_size, shuffle=False)
     
-    return labeled_iterator, unlabeled_iterator, val_iterator, test_iterator
+    return labeled_iterator, unlabeled_iterator, test_iterator
 
     
     
@@ -146,26 +140,6 @@ class UnlabelTransformed(Dataset):
         img_strong = self.strong_transform(img)
         
         return img_weak, img_strong
-    
-
-class ValTransformed(Dataset):
-    
-    def __init__(self, val_dataset, eval_transform):
-        
-        self.val_dataset = val_dataset[0]
-        self.val_target = val_dataset[1]
-        self.eval_transform = eval_transform
-    
-    def __len__(self):
-        
-        return len(self.val_dataset)
-    
-    def __getitem__(self, ind):
-    
-        (img, label) = self.val_dataset[ind], self.val_target[ind]
-        img = self.eval_transform(img)
-        
-        return img, label
 
     
 class TestTransformed(Dataset):
