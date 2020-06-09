@@ -50,7 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--resume', type=str, default=None, help='path to latest checkpoint. Default set to None if train from scratch')
     parser.add_argument('--model_save_path', type=str, default=None, help='saved path for the model')
     parser.add_argument('--state_path', type=str, default='./states', help='path for states')
-    parser.add_argument('--result_path', type=str, default='./results', help='path for results')
+    parser.add_argument('--writer_path', type=str, default='./history', help='path for results')
     
     args = parser.parse_args()
     
