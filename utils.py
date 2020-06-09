@@ -1,8 +1,26 @@
 import math
+import shutil
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
 
+
+def save_checkpoint(state, is_best, ck_path):
+    
+    """ 
+    Checkpoint Mechanism for Training. Save current state for each epoch at ck_path for tracking.
+    If the performance is currently the best, then copy the state file to best_path for future model usage.
+
+    """
+
+    history_path = os.path.join(ck_path, 'checkpoint.pth.tar')
+    torch.save(state, history_path)
+    
+    if is_best:
+        shutil.copyfile(history_path, os.path.join(ck_path, 'best.pth.tar'))
+    
 
 def evaluate(model, test_iterator, device):
     

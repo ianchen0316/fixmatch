@@ -1,11 +1,14 @@
 import math
 import numpy as np
+from tqdm import tqdm
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import LambdaLR
+
 
 
 # from Fixmatch-pytorch
@@ -41,16 +44,16 @@ class FixmatchLoss:
         
         loss = loss_x + self.lambda_u*loss_u
         
-        return loss 
+        return loss, loss_x, loss_u
     
     
-def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func, n_iters, threshold, optimizer, lr_scheduler, device):
+def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, loss_func, optimizer, lr_scheduler, device):
     
     model.train()
-
+    p_bar = tqdm(range(args.num_iters))
     l_iterator, u_iterator = iter(labeled_iterator), iter(unlabeled_iterator)
     
-    for i in range(n_iters):
+    for i in range(args.num_iters):
         
         try:
             X_weak, Y_target = next(l_iterator)
@@ -64,19 +67,20 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func
             u_iterator = iter(unlabeled_iterator)
             U_weak, U_strong = next(u_iterator)
 
-        Y_target = Y_target.to(device)
-        
+        X_weak, Y_target, U_weak, U_strong = X_weak.to(device), Y_target.to(device), U_weak.to(device), U_strong.to(device)
+         
         # ==========================
         
         l_batch_size = X_weak.size(0)
         u_batch_size = U_weak.size(0)
 
-        total_imgs = torch.cat([X_weak, U_weak, U_strong], dim=0).to(device)
+        total_imgs = torch.cat([X_weak, U_weak, U_strong], dim=0)
         logits = model(total_imgs)
         
         # ==========================
         logits_x = logits[:l_batch_size]
         logits_u_weak, logits_u_strong = logits[l_batch_size:l_batch_size+u_batch_size], logits[l_batch_size+u_batch_size:]
+        del logits
         
         # =========================
         
@@ -84,21 +88,22 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, loss_func
         with torch.no_grad():
             probs = torch.softmax(logits_u_weak, dim=1)
             max_p, guess_labels = torch.max(probs, dim=1)
-            mask = max_p.ge(threshold).float()
+            mask = max_p.ge(args.threshold).float()
              
         # ============================
-        loss = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device)
+        loss, loss_x, loss_u = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device)
+        mask_prob = mask.mean().item()
         
         # ============================
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         lr_scheduler.step()
-            
-    def get_lr(optimizer):
+        
         for param_group in optimizer.param_groups:
-            print('current learning rate:', param_group['lr'])
-            
-    get_lr(optimizer)
-    
-    return model
+            lr = param_group['lr']
+        
+        p_bar.set_description("Train Epoch: {}/{} | Iters: {}/{} | LR: {} | Loss: {} | Loss_x:{} | Loss_u: {} | Mask Prob: {}".format(epoch+1, args.epochs, i+1, args.num_iters, lr, loss, loss_x, loss_u))
+        p_bar.update()
+ 
+    return loss, loss_x, loss_u, mask_prob 
