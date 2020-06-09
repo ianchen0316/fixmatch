@@ -103,7 +103,8 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, los
         for param_group in optimizer.param_groups:
             lr = param_group['lr']
         
-        p_bar.set_description("Train Epoch: {}/{} | Iters: {}/{} | LR: {} | Loss: {} | Loss_x:{} | Loss_u: {} | Mask Prob: {}".format(epoch+1, args.epochs, i+1, args.num_iters, lr, loss, loss_x, loss_u))
+        # p_bar.set_description("Train Epoch: {}/{} | Iters: {}/{} | LR: {} | Loss: {} | Loss_x:{} | Loss_u: {} | Mask Prob: {}".format(epoch+1, args.epochs, i+1, args.num_iters, lr, loss, loss_x, loss_u))
+        p_bar.set_description("Train Epoch: {}/{}".format(epoch+1, args.epochs))
         p_bar.update()
  
     return loss, loss_x, loss_u, mask_prob 

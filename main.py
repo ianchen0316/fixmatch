@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, RandomSampler
 from torchvision import datasets, transforms
 from torch.utils.tensorboard import SummaryWriter
 
@@ -49,7 +49,8 @@ if __name__ == '__main__':
     
     parser.add_argument('--resume', type=str, default=None, help='path to latest checkpoint. Default set to None if train from scratch')
     parser.add_argument('--model_save_path', type=str, default=None, help='saved path for the model')
-    parser.add_argument('--writer_path', type=str, default='./history', help='directory path for summary writer')
+    parser.add_argument('--state_path', type=str, default='./states', help='path for states')
+    parser.add_argument('--result_path', type=str, default='./results', help='path for results')
     
     args = parser.parse_args()
     
@@ -62,6 +63,7 @@ if __name__ == '__main__':
         level=logging.INFO 
     )
     
+    os.makedirs(args.state_path, exist_ok=True)
     os.makedirs(args.writer_path, exist_ok=True)
     writer = SummaryWriter(args.writer_path)
  
@@ -113,8 +115,8 @@ if __name__ == '__main__':
     unlabeled = UnlabelTransformed(unlabeled_dataset, weak_transform, strong_transform)
     test = EvalTransformed(test_dataset, eval_transform)
     
-    labeled_iterator = DataLoader(labeled, batch_size=args.batch_size, shuffle=True)
-    unlabeled_iterator = DataLoader(unlabeled, batch_size=args.mu*args.batch_size, shuffle=True)
+    labeled_iterator = DataLoader(labeled, sampler=RandomSampler(labeled), batch_size=args.batch_size, drop_last=True)
+    unlabeled_iterator = DataLoader(unlabeled, sampler=RandomSampler(unlabeled), batch_size=args.mu*args.batch_size, drop_last=True)
     test_iterator = DataLoader(test, batch_size=args.batch_size, shuffle=False)
     
     # ================== Device =====================================
@@ -175,7 +177,6 @@ if __name__ == '__main__':
         writer.add_scaler('train/3.train_loss_u', train_loss_u, epoch)
         writer.add_scaler('train/4.mask_prob', mask_prob, epoch)
         writer.add_scaler('test/1.test_acc', test_acc, epoch)
-        #writer.add_scaler('test/2.test_loss', test_loss, epoch)
         
         is_best = test_acc > best_acc
         best_acc = max(test_acc, best_acc)
@@ -187,7 +188,7 @@ if __name__ == '__main__':
                  'optimizer': optimizer.state_dict(),
                  'scheduler': scheduler.state_dict()}
 
-        save_checkpoint(state, is_best, args.writer_path)
+        save_checkpoint(state, is_best, args.state_path)
         
         logger.info('Best Accuracy: {}'.format(best_acc))
         logger.info('Epoch Test Accuracy: {}'.format(test_acc))
