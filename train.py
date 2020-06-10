@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import LambdaLR
 
+from utils import AverageMeter
 
 
 # from Fixmatch-pytorch
@@ -53,6 +54,10 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, los
     p_bar = tqdm(range(args.num_iters))
     l_iterator, u_iterator = iter(labeled_iterator), iter(unlabeled_iterator)
     
+    losses = AverageMeter()
+    losses_x = AverageMeter()
+    losses_u = AverageMeter()
+    
     for i in range(args.num_iters):
         
         try:
@@ -92,7 +97,7 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, los
              
         # ============================
         loss, loss_x, loss_u = loss_func(logits_x, logits_u_weak, logits_u_strong, Y_target, guess_labels, mask, device)
-        mask_prob = mask.mean().item()
+        mask_prob = 100*mask.mean().item()
         
         # ============================
         optimizer.zero_grad()
@@ -100,11 +105,20 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, los
         optimizer.step()
         lr_scheduler.step()
         
+        # ===========================
+        
+        losses.update(loss.item())
+        losses_x.update(loss_x.item())
+        losses_u.update(loss_u.item())
+        
+        # ============================
+        
         for param_group in optimizer.param_groups:
             lr = param_group['lr']
         
-        # p_bar.set_description("Train Epoch: {}/{} | Iters: {}/{} | LR: {} | Loss: {} | Loss_x:{} | Loss_u: {} | Mask Prob: {}".format(epoch+1, args.epochs, i+1, args.num_iters, lr, loss, loss_x, loss_u))
-        p_bar.set_description("Train Epoch: {}/{} | Loss: {}, Loss_x: {}, Loss_u: {} | Mask Rate: {}".format(epoch+1, args.epochs, loss, loss_x, loss_u, mask_prob))
+        p_bar.set_description("Train Epoch: {}/{} | Lr: {} | Loss: {}, Loss_x: {}, Loss_u: {} | Mask Rate: {}".format(epoch+1, args.epochs, lr, loss, loss_x, loss_u, mask_prob))
         p_bar.update()
+    
+    p_bar.close()
  
-    return loss, loss_x, loss_u, mask_prob 
+    return losses.avg, losses_x.avg, losses_u.avg, mask_prob 

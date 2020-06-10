@@ -11,7 +11,6 @@ import torch.nn.functional as F
 
 from torch.utils.data import DataLoader, Dataset, RandomSampler
 from torchvision import datasets, transforms
-from torch.utils.tensorboard import SummaryWriter
 
 from datagen import BatchScenario, LabelTransformed, UnlabelTransformed, EvalTransformed
 from randaugment import RandAugmentMC
@@ -28,6 +27,7 @@ if __name__ == '__main__':
     # Parse Hyperparameters:
     parser = argparse.ArgumentParser(description="Fixmatch Hyperparameters")
     
+    parser.add_argument('--exp_name', type=str, default='exp', help='experiment name')
     parser.add_argument('--dataset', type=str, default='cifar-10', help='dataset for training/evaluating')
     parser.add_argument('--path', type=str, default='./', help='path of the dataset')
     parser.add_argument('--n_labeled', type=int, default=4000, help='number of total labeled data in training')
@@ -45,16 +45,16 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.03, help='initial learning rate')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum for optimizer')
     parser.add_argument('--weight_decay', type=float, default=0.0005, help='coefficient of L2 regularization loss term')
-    parser.add_argument('--seed', type=int, default=42, help='seed for randomization. -1 if no seed')
+    parser.add_argument('--seed', type=int, default=38, help='seed for randomization. -1 if no seed')
     
     parser.add_argument('--resume', type=str, default=None, help='path to latest checkpoint. Default set to None if train from scratch')
     parser.add_argument('--model_save_path', type=str, default=None, help='saved path for the model')
     parser.add_argument('--state_path', type=str, default='./states', help='path for states')
-    parser.add_argument('--writer_path', type=str, default='./history', help='path for results')
+    parser.add_argument('--result_path', type=str, default='./history', help='path for results')
     
     args = parser.parse_args()
     
-    # Set Loggers and Summary Writers
+    # Set Loggers and Result trackers
     
     logger = logging.getLogger(__name__)
     logging.basicConfig(
@@ -64,9 +64,15 @@ if __name__ == '__main__':
     )
     
     os.makedirs(args.state_path, exist_ok=True)
-    os.makedirs(args.writer_path, exist_ok=True)
-    writer = SummaryWriter(args.writer_path)
- 
+    os.makedirs(args.result_path, exist_ok=True)
+    
+    results = {}
+    results['train_loss'] = []
+    results['train_loss_x'] = []
+    results['train_loss_u'] = []
+    results['mask_prob'] = []
+    results['test_acc'] = []
+    
     # Set Seeds 
     
     if args.seed > 0:
@@ -76,8 +82,10 @@ if __name__ == '__main__':
         
     # ============ Dataset Setup ============================
     
+    l = args.n_labeled // args.n_classes
+    
     config_map = {
-    'D_0': [(400, 4600), (400, 4600), (400, 4600), (400, 4600), (400, 4600), (400, 4600), (400, 4600), (400, 4600), (400, 4600), (400, 4600)]  
+    'D_0': [(l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l)]  
     }
 
     weak_transform = transforms.Compose([
@@ -137,6 +145,7 @@ if __name__ == '__main__':
     
     # ================= Loss function / Optimizer =====================================
     loss_func = FixmatchLoss(args.l_u)
+    test_loss_func = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum, nesterov=True)
     lr_scheduler = get_cosine_schedule_with_warmup(optimizer, 0, args.epochs*args.num_iters)
     
@@ -154,7 +163,7 @@ if __name__ == '__main__':
         start_epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
-        scheduler.load_state_dict(checkpoint['scheduler'])
+        lr_scheduler.load_state_dict(checkpoint['scheduler'])
         
     logger.info(" ===================== Start Training ===================================")
     logger.info(" Num Epochs = {}".format(args.epochs))
@@ -170,14 +179,20 @@ if __name__ == '__main__':
         # Will be changed if we use EMA 
         test_model = model
         
-        test_acc = evaluate(test_iterator, test_model, epoch)
+        test_acc, test_loss = evaluate(test_model, test_iterator, device)
         
-        writer.add_scaler('train/1.train_loss', train_loss, epoch)
-        writer.add_scaler('train/2.train_loss_x', train_loss_x, epoch)
-        writer.add_scaler('train/3.train_loss_u', train_loss_u, epoch)
-        writer.add_scaler('train/4.mask_prob', mask_prob, epoch)
-        writer.add_scaler('test/1.test_acc', test_acc, epoch)
+        # Save Results Tracking for each epoch
+        results['train_loss'].append(train_loss.to('cpu').item())
+        results['train_loss_x'].append(train_loss_x.to('cpu').item())
+        results['train_loss_u'].append(train_loss_u.to('cpu').item())
+        results['mask_prob'].append(mask_prob.to('cpu').item())
+        results['test_acc'].append(test_acc.to('cpu').item())
+        results['test_loss'].append(test_loss.to('cpu').item())
         
+        with open(args.result_path + '/' + args.exp_name, 'wb') as f:
+            pickle.dump(results, f)
+        
+        # Save State for each epoch
         is_best = test_acc > best_acc
         best_acc = max(test_acc, best_acc)
         
@@ -186,14 +201,15 @@ if __name__ == '__main__':
                  'acc': test_acc, 
                  'best_acc': best_acc,
                  'optimizer': optimizer.state_dict(),
-                 'scheduler': scheduler.state_dict()}
+                 'scheduler': lr_scheduler.state_dict()}
 
         save_checkpoint(state, is_best, args.state_path)
         
+        # Log for test accuracy
         logger.info('Best Accuracy: {}'.format(best_acc))
         logger.info('Epoch Test Accuracy: {}'.format(test_acc))
+
         
-    writer.close()
     
     
     
