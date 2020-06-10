@@ -190,7 +190,7 @@ if __name__ == '__main__':
         results['test_acc'].append(test_acc)
         results['test_loss'].append(test_loss)
         
-        with open(args.result_path + '/' + args.exp_name, 'wb') as f:
+        with open(args.result_path + '/' + args.exp_name + '.pkl', 'wb') as f:
             pickle.dump(results, f)
         
         # Save State for each epoch

@@ -71,11 +71,15 @@ class LabelTransformed(Dataset):
     
     def __init__(self, train_base, labeled_ind, args, transform):
         
-        aug_ratio = args.aug_num // len(labeled_ind) + 1
+        aug_ratio = args.aug_num // len(labeled_ind) 
         
         self.train_base = train_base
         self.aug_labeled_ind = np.hstack([labeled_ind for _ in range(aug_ratio)])
-        self.aug_labeled_target = np.hstack([np.array(train_base.targets)[labeled_ind] for _ in range(aug_ratio)])
+        
+        if len(self.aug_labeled_ind) < args.aug_num:
+            diff = args.aug_num - len(self.aug_labeled_ind)
+            self.aug_labeled_ind = np.hstack((self.aug_labeled_ind, np.random.choice(self.aug_labeled_ind, diff)))
+        
         self.transform = transform
     
     def __len__(self):
@@ -84,7 +88,7 @@ class LabelTransformed(Dataset):
     
     def __getitem__(self, ind):
     
-        (img, label) = self.train_base.data[self.aug_labeled_ind[ind]], self.aug_labeled_target[ind]
+        (img, label) = self.train_base.data[self.aug_labeled_ind[ind]], np.array(self.train_base.targets)[self.aug_labeled_ind[ind]]
         img = self.transform(img)
         
         return img, label
@@ -94,10 +98,15 @@ class UnlabelTransformed(Dataset):
     
     def __init__(self, train_base, unlabeled_ind, args, weak_transform, strong_transform):
         
-        aug_ratio = args.mu*args.aug_num // len(unlabeled_ind) + 1
+        aug_ratio = args.mu*args.aug_num // len(unlabeled_ind) 
         
         self.train_base = train_base
         self.aug_unlabeled_ind = np.hstack([unlabeled_ind for _ in range(aug_ratio)])
+        
+        if len(self.aug_unlabeled_ind) < args.mu*args.aug_num:
+            diff = args.mu*args.aug_num - len(self.aug_unlabeled_ind)
+            self.aug_unlabeled_ind = np.hstack((self.aug_unlabeled_ind, np.random.choice(self.aug_unlabeled_ind, diff)))
+        
         self.weak_transform = weak_transform
         self.strong_transform = strong_transform
     
