@@ -71,6 +71,7 @@ if __name__ == '__main__':
     results['train_loss_u'] = []
     results['mask_prob'] = []
     results['test_acc'] = []
+    results['test_loss'] = []
     
     # Set Seeds 
     

@@ -15,11 +15,11 @@ def save_checkpoint(state, is_best, ck_path):
 
     """
 
-    history_path = os.path.join(ck_path, 'checkpoint.pth.tar')
+    history_path = os.path.join(ck_path, 'checkpoint.pkl')
     torch.save(state, history_path)
     
     if is_best:
-        shutil.copyfile(history_path, os.path.join(ck_path, 'best.pth.tar'))
+        shutil.copyfile(history_path, os.path.join(ck_path, 'best.pkl'))
     
 
 def evaluate(model, test_iterator, loss_func, device):
