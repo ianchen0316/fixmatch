@@ -205,7 +205,7 @@ if __name__ == '__main__':
                  'optimizer': optimizer.state_dict(),
                  'scheduler': lr_scheduler.state_dict()}
 
-        save_checkpoint(state, is_best, args.state_path)
+        save_checkpoint(state, is_best, args.state_path, args.exp_name)
         
         # Log for test accuracy
         logger.info('Best Accuracy: {}'.format(best_acc))

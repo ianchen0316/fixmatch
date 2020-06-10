@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 
-def save_checkpoint(state, is_best, ck_path):
+def save_checkpoint(state, is_best, ck_path, exp_name):
     
     """ 
     Checkpoint Mechanism for Training. Save current state for each epoch at ck_path for tracking.
@@ -15,11 +15,11 @@ def save_checkpoint(state, is_best, ck_path):
 
     """
 
-    history_path = os.path.join(ck_path, 'checkpoint.pkl')
+    history_path = os.path.join(ck_path, exp_name + '_checkpoint.pth.tar')
     torch.save(state, history_path)
     
     if is_best:
-        shutil.copyfile(history_path, os.path.join(ck_path, 'best.pkl'))
+        shutil.copyfile(history_path, os.path.join(ck_path, exp_name + '_best.pth.tar'))
     
 
 def evaluate(model, test_iterator, loss_func, device):
