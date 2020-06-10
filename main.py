@@ -35,10 +35,9 @@ if __name__ == '__main__':
     parser.add_argument('--n_classes', type=int, default=10, help='number of classes')
     parser.add_argument('--model_name', type=str, default='WideResnet', help='backbone model for classification')
     
-    
     parser.add_argument('--epochs', type=int, default=1024, help='number of training epochs')
+    parser.add_argument('--aug_num', type=int, default=2**16, help='number of augmented labeled data')
     parser.add_argument('--batch_size', type=int, default=64, help='training batch of labeled data')
-    parser.add_argument('--num_iters', type=int, default=1024, help='number of iterations per epoch')
     parser.add_argument('--mu', type=int, default=7, help='ratio of # unlabeled data to # labeled data in training')
     parser.add_argument('--threshold', type=float, default=0.95, help='probability threshold for pseudo label')
     parser.add_argument('--l_u', type=float, default=1.0, help='weight of unlabeled loss')
@@ -116,16 +115,18 @@ if __name__ == '__main__':
     
     scenario = BatchScenario(args.dataset, args.path, config_map)
     scenario.scenario_generation()
-    labeled_dataset, unlabeled_dataset = scenario.get_batch_dataset('D_0')
+    train_base, labeled_ind, unlabeled_ind = scenario.get_batch_dataset('D_0')
     test_dataset = scenario.get_test_dataset()
     
-    labeled = LabelTransformed(labeled_dataset, weak_transform)
-    unlabeled = UnlabelTransformed(unlabeled_dataset, weak_transform, strong_transform)
+    labeled = LabelTransformed(train_base, labeled_ind, args, weak_transform)
+    unlabeled = UnlabelTransformed(train_base, unlabeled_ind, args ,weak_transform, strong_transform)
     test = EvalTransformed(test_dataset, eval_transform)
     
     labeled_iterator = DataLoader(labeled, sampler=RandomSampler(labeled), batch_size=args.batch_size, drop_last=True)
     unlabeled_iterator = DataLoader(unlabeled, sampler=RandomSampler(unlabeled), batch_size=args.mu*args.batch_size, drop_last=True)
     test_iterator = DataLoader(test, batch_size=args.batch_size, shuffle=False)
+    
+    args.num_iters = args.aug_num // args.batch_size
     
     # ================== Device =====================================
     
@@ -182,12 +183,12 @@ if __name__ == '__main__':
         test_acc, test_loss = evaluate(test_model, test_iterator, test_loss_func, device)
         
         # Save Results Tracking for each epoch
-        results['train_loss'].append(train_loss.to('cpu').item())
-        results['train_loss_x'].append(train_loss_x.to('cpu').item())
-        results['train_loss_u'].append(train_loss_u.to('cpu').item())
-        results['mask_prob'].append(mask_prob.to('cpu').item())
-        results['test_acc'].append(test_acc.to('cpu').item())
-        results['test_loss'].append(test_loss.to('cpu').item())
+        results['train_loss'].append(train_loss)
+        results['train_loss_x'].append(train_loss_x)
+        results['train_loss_u'].append(train_loss_u)
+        results['mask_prob'].append(mask_prob)
+        results['test_acc'].append(test_acc)
+        results['test_loss'].append(test_loss)
         
         with open(args.result_path + '/' + args.exp_name, 'wb') as f:
             pickle.dump(results, f)

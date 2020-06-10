@@ -52,25 +52,17 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, los
     
     model.train()
     p_bar = tqdm(range(args.num_iters))
-    l_iterator, u_iterator = iter(labeled_iterator), iter(unlabeled_iterator)
+    
+    train_iterator = zip(labeled_iterator, unlabeled_iterator)
     
     losses = AverageMeter()
     losses_x = AverageMeter()
     losses_u = AverageMeter()
     
-    for i in range(args.num_iters):
+    for i, (labeled_batch, unlabeled_batch) in enumerate(train_iterator):
         
-        try:
-            X_weak, Y_target = next(l_iterator)
-        except:
-            l_iterator = iter(labeled_iterator)
-            X_weak, Y_target = next(l_iterator)
-        
-        try:
-            U_weak, U_strong = next(u_iterator)
-        except:
-            u_iterator = iter(unlabeled_iterator)
-            U_weak, U_strong = next(u_iterator)
+        X_weak, Y_target = labeled_batch
+        U_weak, U_strong = unlabeled_batch
 
         X_weak, Y_target, U_weak, U_strong = X_weak.to(device), Y_target.to(device), U_weak.to(device), U_strong.to(device)
          

@@ -14,10 +14,10 @@ class BatchScenario:
 
         if dataset == 'cifar-10':
         
-            train_base = datasets.CIFAR10(root, train=True, download=True)
+            self.train_base = datasets.CIFAR10(root, train=True, download=True)
             
-            self._train_data = train_base.data
-            self._train_labels = np.array(train_base.targets)
+            self._train_data = self.train_base.data
+            self._train_labels = np.array(self.train_base.targets)
             self._class_indices = [np.where(self._train_labels == i)[0] for i in range(10)]
             
             self.config_map = config_map
@@ -53,17 +53,13 @@ class BatchScenario:
         
         self.total_batch_indices = total_batches
         
-        
     def get_batch_dataset(self, batch_name):
-        
+            
         labeled_ind = self.total_batch_indices[batch_name]['labeled_ind']
         unlabeled_ind = self.total_batch_indices[batch_name]['unlabeled_ind']
-        
-        labeled_dataset = (self._train_data[labeled_ind], self._train_labels[labeled_ind])
-        unlabeled_dataset = self._train_data[unlabeled_ind]
-        
-        return labeled_dataset, unlabeled_dataset
-
+      
+        return self.train_base, labeled_ind, unlabeled_ind
+    
     def get_test_dataset(self):
         
         test_dataset = (self.test_data, self.test_labels)
@@ -73,19 +69,22 @@ class BatchScenario:
         
 class LabelTransformed(Dataset):
     
-    def __init__(self, labeled_dataset, transform):
+    def __init__(self, train_base, labeled_ind, args, transform):
         
-        self.labeled_dataset = labeled_dataset[0]
-        self.labeled_target = labeled_dataset[1]
+        aug_ratio = args.aug_num // len(labeled_ind) + 1
+        
+        self.train_base = train_base
+        self.aug_labeled_ind = np.hstack([labeled_ind for _ in range(aug_ratio)])
+        self.aug_labeled_target = np.hstack([np.array(train_base.targets)[labeled_ind] for _ in range(aug_ratio)])
         self.transform = transform
     
     def __len__(self):
         
-        return len(self.labeled_dataset)
+        return len(self.aug_labeled_ind)
     
     def __getitem__(self, ind):
     
-        (img, label) = self.labeled_dataset[ind], self.labeled_target[ind]
+        (img, label) = self.train_base.data[self.aug_labeled_ind[ind]], self.aug_labeled_target[ind]
         img = self.transform(img)
         
         return img, label
@@ -93,19 +92,22 @@ class LabelTransformed(Dataset):
             
 class UnlabelTransformed(Dataset):
     
-    def __init__(self, unlabeled_dataset, weak_transform, strong_transform):
+    def __init__(self, train_base, unlabeled_ind, args, weak_transform, strong_transform):
         
-        self.unlabeled_dataset = unlabeled_dataset
+        aug_ratio = args.mu*args.aug_num // len(unlabeled_ind) + 1
+        
+        self.train_base = train_base
+        self.aug_unlabeled_ind = np.hstack([unlabeled_ind for _ in range(aug_ratio)])
         self.weak_transform = weak_transform
         self.strong_transform = strong_transform
     
     def __len__(self):
         
-        return len(self.unlabeled_dataset)
+        return len(self.aug_unlabeled_ind)
     
     def __getitem__(self, ind):
     
-        img = self.unlabeled_dataset[ind]
+        img = self.train_base.data[self.aug_unlabeled_ind[ind]]
         img_weak = self.weak_transform(img)
         img_strong = self.strong_transform(img)
         
