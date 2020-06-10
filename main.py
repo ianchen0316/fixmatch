@@ -179,7 +179,7 @@ if __name__ == '__main__':
         # Will be changed if we use EMA 
         test_model = model
         
-        test_acc, test_loss = evaluate(test_model, test_iterator, device)
+        test_acc, test_loss = evaluate(test_model, test_iterator, test_loss_func, device)
         
         # Save Results Tracking for each epoch
         results['train_loss'].append(train_loss.to('cpu').item())
