@@ -159,13 +159,15 @@ if __name__ == '__main__':
     
     if args.resume:
         logger.info(" ================== Resume from checkpoint =========================")
-        assert os.path.is_path(args.resume), "Checkpoint directory does not exist!"
         checkpoint = torch.load(args.resume)
         best_acc = checkpoint['best_acc']
         start_epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['scheduler'])
+        
+        with open(args.result_path + '/' + args.exp_name + '.pkl', 'rb') as f:
+            results = pickle.load(f)
         
     logger.info(" ===================== Start Training ===================================")
     logger.info(" Num Epochs = {}".format(args.epochs))
