@@ -109,7 +109,7 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, los
             lr = param_group['lr']
         
         p_bar.set_description("Train Epoch: {}/{} | Iterations: {}/{} | Lr: {} | Loss: {}, Loss_x: {}, Loss_u: {} | Mask Rate: {}".format(epoch+1, args.epochs, i+1, args.num_iters, lr, loss, loss_x, loss_u, mask_prob))
-        p_bar.update()
+        # p_bar.update()
     
     p_bar.close()
  
