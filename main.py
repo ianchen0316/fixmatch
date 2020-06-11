@@ -179,6 +179,7 @@ if __name__ == '__main__':
     for epoch in range(start_epoch, args.epochs):
         
         train_loss, train_loss_x, train_loss_u, mask_prob = fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, loss_func, optimizer, lr_scheduler, device)
+        logger.info('Epoch {} | Train Loss: {} | Train Loss x: {} | Train Loss u: {}, Mask Ratio: {}'.format(epoch+1, train_loss, train_loss_x, train_loss_u, mask_prob))
 
         # Will be changed if we use EMA 
         test_model = model
@@ -211,7 +212,7 @@ if __name__ == '__main__':
         
         # Log for test accuracy
         logger.info('Best Accuracy: {}'.format(best_acc))
-        logger.info('Epoch Test Accuracy: {}'.format(test_acc))
+        logger.info('Epoch {} | Test Accuracy: {}'.format(epoch+1, test_acc))
 
         
     

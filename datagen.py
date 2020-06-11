@@ -33,11 +33,9 @@ class BatchScenario:
         batch_names = list(self.config_map.keys())
         num_classes = len(self.config_map[batch_names[0]])
         
-        total_batches = {'D_0': {'labeled_ind': [], 'unlabeled_ind': []}}
-        #total_batches = {}
-        #template = {'labeled_ind': [], 'unlabeled_ind': []}
-        #for name in batch_names:
-        #    total_batches[name] = template
+        total_batches = {}
+        for name in batch_names:
+            total_batches[name] = {'labeled_ind': [], 'unlabeled_ind': []}
             
         for i in range(num_classes):
             cursor = 0

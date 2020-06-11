@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from tqdm import tqdm
 
 import torch
 import torch.nn as nn
@@ -51,7 +50,7 @@ class FixmatchLoss:
 def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, loss_func, optimizer, lr_scheduler, device):
     
     model.train()
-    p_bar = tqdm(range(args.num_iters))
+    # p_bar = tqdm(range(args.num_iters))
     
     train_iterator = zip(labeled_iterator, unlabeled_iterator)
     
@@ -108,9 +107,9 @@ def fixmatch_train(epoch, model, labeled_iterator, unlabeled_iterator, args, los
         for param_group in optimizer.param_groups:
             lr = param_group['lr']
         
-        p_bar.set_description("Train Epoch: {}/{} | Iterations: {}/{} | Lr: {} | Loss: {}, Loss_x: {}, Loss_u: {} | Mask Rate: {}".format(epoch+1, args.epochs, i+1, args.num_iters, lr, loss, loss_x, loss_u, mask_prob))
+        #p_bar.set_description("Train Epoch: {}/{} | Iterations: {}/{} | Lr: {} | Loss: {}, Loss_x: {}, Loss_u: {} | Mask Rate: {}".format(epoch+1, args.epochs, i+1, args.num_iters, lr, loss, loss_x, loss_u, mask_prob))
         # p_bar.update()
     
-    p_bar.close()
+    # p_bar.close()
  
     return losses.avg, losses_x.avg, losses_u.avg, mask_prob 
