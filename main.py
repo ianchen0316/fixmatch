@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.03, help='initial learning rate')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum for optimizer')
     parser.add_argument('--weight_decay', type=float, default=0.0005, help='coefficient of L2 regularization loss term')
-    parser.add_argument('--seed', type=int, default=38, help='seed for randomization. -1 if no seed')
+    parser.add_argument('--seed', type=int, default=38, help='seed for randomization')
     
     parser.add_argument('--resume', type=str, default=None, help='path to latest checkpoint. Default set to None if train from scratch')
     parser.add_argument('--model_save_path', type=str, default=None, help='saved path for the model')
@@ -80,14 +80,8 @@ if __name__ == '__main__':
         random.seed(args.seed)
         np.random.seed(args.seed)
         
-    # ============ Dataset Setup ============================
+    # ============ Transformation Setup =====================
     
-    l = args.n_labeled // args.n_classes
-    
-    config_map = {
-    'D_0': [(l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l)]  
-    }
-
     weak_transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((32, 32)),
@@ -113,7 +107,15 @@ if __name__ == '__main__':
             transforms.ToTensor(),
             transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2471, 0.2435, 0.2616))   
         ])
+        
+    # ============ Dataset Setup ============================
     
+    l = args.n_labeled // args.n_classes
+    
+    config_map = {
+    'D_0': [(l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l), (l, 5000-l)]  
+    }
+
     scenario = BatchScenario(args.dataset, args.path, config_map)
     scenario.scenario_generation()
     train_base, labeled_ind, unlabeled_ind = scenario.get_batch_dataset('D_0')
@@ -143,7 +145,7 @@ if __name__ == '__main__':
     
     model.to(device)
     
-    logger.info("Total Parameters: {}M".format(sum(p.numel()for p in model.parameters()) / 1e6 ))
+    logger.info("Total Parameters: {}M".format(sum(p.numel() for p in model.parameters()) / 1e6))
     
     # ================= Loss function / Optimizer =====================================
     loss_func = FixmatchLoss(args.l_u)
